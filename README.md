@@ -34,19 +34,6 @@ I was primarily responsible for implementing the following built-in commands:
 
 
 
-🔍 Systems & Security Retrospective
-
-Looking back at this project with my current background in cybersecurity and software development, several architectural and memory management decisions serve as valuable technical takeaways:
-
-🛡️ Memory Safety & Data Structures in `clonk`
-
-* File Size Constraints & Buffer Limits: The editor currently reads and edits files using fixed stack buffers (`char buffer[1024]`), inherently restricting it to small text files. A production refactor should dynamically allocate buffer sizes on the heap using `fseek()`/`ftell()` or read lines dynamically with `getline()`.
-
-* Stack Bounds & Buffer Overflows (CWE-121): To append missing lines past EOF, the initial implementation relied on an iterative/recursive helper passing a small stack array (`add_line[] = "\n"`). This approach is prone to stack-smashing risks if user input exceeds available stack alignment. Eliminating the recursion in favor of an iterative append loop—or managing lines dynamically—removes this vulnerability entirely.
-
-* Architectural Refactoring: Rather than performing in-place string manipulation on a single flat buffer, the editor should be refactored to use a dynamic array of line pointers (`char** lines`) allocated on the heap with `malloc()`/`realloc()`, or a dedicated data structure like a Gap Buffer. This isolates lines, enables safe line insertions, and prevents cross-buffer memory corruption.
-
-
 ⚙️ POSIX Terminal Control (Raw vs. Cooked Mode)
 
 * I/O Mode Switching: To capture arrow keys and raw keypresses byte-by-byte for screen navigation, the terminal is placed into Raw Mode.
@@ -108,3 +95,16 @@ clank-main/
 ├── Makefile          # Build instructions and automatic registry generator
 ├── main.c            # The main shell loop and entry point
 └── README.md
+
+
+🔍 Systems & Security Retrospective
+
+Looking back at this project with my current background in cybersecurity and software development, several architectural and memory management decisions serve as valuable technical takeaways:
+
+🛡️ Memory Safety & Data Structures in `clonk`
+
+* File Size Constraints & Buffer Limits: The editor currently reads and edits files using fixed stack buffers (`char buffer[1024]`), inherently restricting it to small text files. A production refactor should dynamically allocate buffer sizes on the heap using `fseek()`/`ftell()` or read lines dynamically with `getline()`.
+
+* Stack Bounds & Buffer Overflows (CWE-121): To append missing lines past EOF, the initial implementation relied on an iterative/recursive helper passing a small stack array (`add_line[] = "\n"`). This approach is prone to stack-smashing risks if user input exceeds available stack alignment. Eliminating the recursion in favor of an iterative append loop—or managing lines dynamically—removes this vulnerability entirely.
+
+* Architectural Refactoring: Rather than performing in-place string manipulation on a single flat buffer, the editor should be refactored to use a dynamic array of line pointers (`char** lines`) allocated on the heap with `malloc()`/`realloc()`, or a dedicated data structure like a Gap Buffer. This isolates lines, enables safe line insertions, and prevents cross-buffer memory corruption.
