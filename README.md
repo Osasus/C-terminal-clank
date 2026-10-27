@@ -32,11 +32,34 @@ I was primarily responsible for implementing the following built-in commands:
     clonk (clonk.c)
     A simple, built-in, line-based text editor. It reads a file, prints its contents alongside line numbers, and prompts the user to select a specific line to overwrite or edit.
 
-📝 Technical Note: clonk Improvements
 
-Currently, the clonk text editor uses fixed-size stack arrays (char buffer[1024]) to handle file reading and line editing. While this works perfectly for small text files, it has a strict size limit.
 
-Future Improvement: The memory handling should be refactored to use dynamic memory allocation. By utilizing fseek/ftell to find the exact file size and malloc/realloc to allocate the buffer (or by reading line-by-line using getline()), the editor will be able to safely handle files of any size without risking buffer truncation.
+🔍 Systems & Security Retrospective
+
+Looking back at this project with my current background in cybersecurity and software development, several architectural and memory management decisions serve as valuable technical takeaways:
+
+🛡️ Memory Safety & Data Structures in `clonk`
+
+* File Size Constraints & Buffer Limits: The editor currently reads and edits files using fixed stack buffers (`char buffer[1024]`), inherently restricting it to small text files. A production refactor should dynamically allocate buffer sizes on the heap using `fseek()`/`ftell()` or read lines dynamically with `getline()`.
+
+* Stack Bounds & Buffer Overflows (CWE-121): To append missing lines past EOF, the initial implementation relied on an iterative/recursive helper passing a small stack array (`add_line[] = "\n"`). This approach is prone to stack-smashing risks if user input exceeds available stack alignment. Eliminating the recursion in favor of an iterative append loop—or managing lines dynamically—removes this vulnerability entirely.
+
+* Architectural Refactoring: Rather than performing in-place string manipulation on a single flat buffer, the editor should be refactored to use a dynamic array of line pointers (`char** lines`) allocated on the heap with `malloc()`/`realloc()`, or a dedicated data structure like a Gap Buffer. This isolates lines, enables safe line insertions, and prevents cross-buffer memory corruption.
+
+
+⚙️ POSIX Terminal Control (Raw vs. Cooked Mode)
+
+* I/O Mode Switching: To capture arrow keys and raw keypresses byte-by-byte for screen navigation, the terminal is placed into Raw Mode.
+
+* Safe Line Editing: When clonk prompts the user to edit a specific line, the editor temporarily restores Cooked Mode. This hands input buffering back to the kernel's TTY driver so that echoing, Backspace handling, and standard line-editing work seamlessly with `fgets()`, before switching back to Raw mode.
+
+
+💬 Command Evolution in `echo`
+
+* Environment Variable Expansion: Environment variable support was introduced to Clank Shell after `echo` was initially written. The command can be further enhanced to handle variable expansion (`$VAR`). Architecturally, this variable substitution is best handled upstream in the shell's core lexer/parser before arguments (`argv`) are dispatched, ensuring uniform variable expansion across all commands.
+
+
+
 🚀 Getting Started
 Prerequisites
 
